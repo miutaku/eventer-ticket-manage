@@ -87,43 +87,63 @@ func main() {
 		// SQL文の準備
 		// tickets
 		ticketTableName := "tickets"
-		sql := fmt.Sprintf("INSERT INTO %s (ticketService, ticketRegistDate, eventName, eventDate, eventPlace) VALUES (?, ?, ?, ?, ?)", ticketTableName)
-		ticketStmt, err := tx.Prepare(sql)
+		ticketSQL := fmt.Sprintf("INSERT INTO %s (ticketService, ticketRegistDate, eventName, eventDate, eventPlace) VALUES (?, ?, ?, ?, ?)", ticketTableName)
+		ticketStmt, err := tx.Prepare(ticketSQL)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, sql), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, ticketSQL), http.StatusInternalServerError)
 			return
 		}
-		log.Printf("SQL statement prepared: %s", sql)
+		log.Printf("SQL statement prepared: %s", ticketSQL)
 		defer ticketStmt.Close()
 
-		// userr_tickets
+		// user_tickets
 		userTicketTableName := "user_tickets"
 		userTicketSQL := fmt.Sprintf("INSERT INTO %s (userId, ticketId,  ticketCount, isReserve, payLimitDate) VALUES (?, ?, ?, ?, ?)", userTicketTableName)
 		userTicketStmt, err := tx.Prepare(userTicketSQL)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, sql), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, userTicketSQL), http.StatusInternalServerError)
 			return
 		}
-		log.Printf("SQL statement prepared: %s", sql)
+		log.Printf("SQL statement prepared: %s", userTicketSQL)
 		defer userTicketStmt.Close()
 
 		// SQLの実行
 		// tickets
-		result, err := ticketStmt.Exec(
-			reqData.TicketService,
-			reqData.TicketRegistDate,
-			reqData.EventName,
-			reqData.EventDate,
-			reqData.EventPlace,
-		)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
-		}
-		ticketId, err := result.LastInsertId()
-		if err != nil {
-			http.Error(w, fmt.Sprintf("ticketIdの確認ができません。: %s", err), http.StatusInternalServerError)
+		selectSQL := fmt.Sprintf("SELECT ticketId FROM %s WHERE eventName = ? AND eventDate = ? AND eventPlace = ?", ticketTableName) // 重複チェック
+		var ticketId int64
+		err = tx.QueryRow(selectSQL, reqData.EventName, reqData.EventDate, reqData.EventPlace).Scan(&ticketId)
+
+		if err != nil && err != sql.ErrNoRows {
+			http.Error(w, fmt.Sprintf("チケット重複確認中にエラーが発生しました: %s", err), http.StatusInternalServerError)
+			return
 		}
 
+		if err == nil {
+			// チケットが既に存在する場合
+			log.Printf("既存のチケットが見つかりました。ticketId: %d", ticketId)
+		} else {
+			// チケットが存在しない場合、新規に挿入
+			result, err := ticketStmt.Exec(
+				reqData.TicketService,
+				reqData.TicketRegistDate,
+				reqData.EventName,
+				reqData.EventDate,
+				reqData.EventPlace,
+			)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
+				return
+			}
+
+			ticketId, err = result.LastInsertId()
+			if err != nil {
+				http.Error(w, fmt.Sprintf("ticketIdの確認ができません: %s", err), http.StatusInternalServerError)
+				return
+			}
+			log.Printf("新しいチケットが挿入されました。ticketId: %d", ticketId)
+		}
+
+		// user_tickets
 		_, err = userTicketStmt.Exec(
 			reqData.UserId,
 			ticketId,

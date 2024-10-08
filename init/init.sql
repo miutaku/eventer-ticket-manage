@@ -7,9 +7,9 @@ CREATE TABLE tickets (
   ticketRegistDate DATETIME,
   eventName VARCHAR(100),
   eventDate DATETIME,
-  eventPlace VARCHAR(100)
+  eventPlace VARCHAR(100),
+  UNIQUE INDEX unique_event_index (eventName, eventDate, eventPlace)
 );
-
 
 CREATE TABLE user_tickets (
   userId VARCHAR(100),
@@ -17,6 +17,5 @@ CREATE TABLE user_tickets (
   ticketCount INT,
   isReserve BOOLEAN,
   payLimitDate DATETIME,
-  PRIMARY KEY (userId, ticketId),
   FOREIGN KEY (ticketId) REFERENCES tickets(ticketId)
 );
