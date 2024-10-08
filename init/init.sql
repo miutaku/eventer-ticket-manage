@@ -1,26 +1,22 @@
 CREATE DATABASE IF NOT EXISTS ticket_register;
 USE ticket_register;
+
 CREATE TABLE tickets (
-  ticketID BIGINT AUTO_INCREMENT PRIMARY KEY,
+  ticketId BIGINT AUTO_INCREMENT PRIMARY KEY,
   ticketService VARCHAR(100),
+  ticketRegistDate DATETIME,
   eventName VARCHAR(100),
   eventDate DATETIME,
   eventPlace VARCHAR(100)
 );
 
-CREATE TABLE user_details (
-  userID VARCHAR(100),
-  ticketRegistDate DATETIME,
+
+CREATE TABLE user_tickets (
+  userId VARCHAR(100),
+  ticketId BIGINT,
   ticketCount INT,
   isReserve BOOLEAN,
   payLimitDate DATETIME,
-  PRIMARY KEY (userID, ticketRegistDate)
-);
-
-CREATE TABLE user_tickets (
-  userID VARCHAR(100),
-  ticketID BIGINT,
-  PRIMARY KEY (userID, ticketID),
-  FOREIGN KEY (userID) REFERENCES user_details(userID),
-  FOREIGN KEY (ticketID) REFERENCES tickets(ticketID)
+  PRIMARY KEY (userId, ticketId),
+  FOREIGN KEY (ticketId) REFERENCES tickets(ticketId)
 );

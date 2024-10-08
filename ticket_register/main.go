@@ -73,18 +73,21 @@ func main() {
 			http.Error(w, "トランザクション開始に失敗しました:", http.StatusInternalServerError)
 			return
 		}
-		log.Println("Transaction started")
 		defer func() {
-			if err != nil {
-				tx.Rollback()
+			if r := recover(); r != nil {
+				log.Printf("Recovered from panic: %v", r)
+				err = tx.Rollback()
+			} else if err != nil {
+				err = tx.Rollback()
 			} else {
 				err = tx.Commit()
 			}
 		}()
 
 		// SQL文の準備
+		// tickets
 		ticketTableName := "tickets"
-		sql := fmt.Sprintf("INSERT INTO %s (ticketService, eventName, eventDate, eventPlace) VALUES (?, ?, ?, ?)", ticketTableName)
+		sql := fmt.Sprintf("INSERT INTO %s (ticketService, ticketRegistDate, eventName, eventDate, eventPlace) VALUES (?, ?, ?, ?, ?)", ticketTableName)
 		ticketStmt, err := tx.Prepare(sql)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, sql), http.StatusInternalServerError)
@@ -93,87 +96,43 @@ func main() {
 		log.Printf("SQL statement prepared: %s", sql)
 		defer ticketStmt.Close()
 
-		// ユーザー詳細情報の挿入
-		userTableName := "user_details"
-		userDetailSQL := fmt.Sprintf("INSERT INTO %s (userId, ticketRegistDate, ticketCount, isReserve, payLimitDate) VALUES (?, ?, ?, ?, ?)", userTableName)
-		userDetailStmt, err := tx.Prepare(userDetailSQL)
+		// userr_tickets
+		userTicketTableName := "user_tickets"
+		userTicketSQL := fmt.Sprintf("INSERT INTO %s (userId, ticketId,  ticketCount, isReserve, payLimitDate) VALUES (?, ?, ?, ?, ?)", userTicketTableName)
+		userTicketStmt, err := tx.Prepare(userTicketSQL)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, sql), http.StatusInternalServerError)
 			return
 		}
-		log.Printf("SQL statement prepared: %s", userDetailSQL)
-		defer ticketStmt.Close()
-
-		// ユーザーの所有しているチケット情報の挿入
-		userTicketsTableName := "user_tickets"
-		userTicketsSQL := fmt.Sprintf("INSERT INTO %s (userID, ticketID) VALUES (?, ?)", userTicketsTableName)
-		userTicketsStmt, err := tx.Prepare(userTicketsSQL)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, sql), http.StatusInternalServerError)
-			return
-		}
-		log.Printf("SQL statement prepared: %s", userTicketsSQL)
-		defer ticketStmt.Close()
+		log.Printf("SQL statement prepared: %s", sql)
+		defer userTicketStmt.Close()
 
 		// SQLの実行
+		// tickets
 		result, err := ticketStmt.Exec(
 			reqData.TicketService,
+			reqData.TicketRegistDate,
 			reqData.EventName,
 			reqData.EventDate,
 			reqData.EventPlace,
 		)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("チケット情報の挿入に失敗しました: %s", err), http.StatusInternalServerError)
-			return
+			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
 		}
-
-		// AUTO INCREMENTで生成されたチケットIDを取得
-		ticketID, err := result.LastInsertId()
+		ticketId, err := result.LastInsertId()
 		if err != nil {
-			http.Error(w, fmt.Sprintf("チケットIDの取得に失敗しました: %s", err), http.StatusInternalServerError)
-			return
+			http.Error(w, fmt.Sprintf("ticketIdの確認ができません。: %s", err), http.StatusInternalServerError)
 		}
 
-		// ユーザー詳細情報の挿入
-		_, err = userDetailStmt.Exec(
+		_, err = userTicketStmt.Exec(
 			reqData.UserId,
-			reqData.TicketRegistDate,
+			ticketId,
 			reqData.TicketCount,
 			reqData.IsReserve,
 			reqData.PayLimitDate,
 		)
-
-		// ユーザーとチケットの関連付け
-		_, err = userTicketsStmt.Exec(
-			reqData.UserId,
-			ticketID,
-		)
-		if err != nil {
-			http.Error(w, fmt.Sprintf("ユーザーとチケットの関連付けに失敗しました: %s", err), http.StatusInternalServerError)
-			return
-		}
-
 		if err != nil {
 			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
-			return
-		}
-
-		// ユーザーとチケットの関連付け
-		_, err = userTicketsStmt.Exec(
-			reqData.UserId,
-			ticketID,
-		)
-
-		if err != nil {
-			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
-			return
-		}
-
-		// トランザクションのコミットまたはロールバック
-		if err != nil {
-			tx.Rollback()
-		} else {
-			err = tx.Commit()
 		}
 
 		fmt.Fprintf(w, "Data inserted successfully")
