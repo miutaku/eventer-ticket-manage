@@ -14,14 +14,24 @@ import (
 
 // JSONリクエストの構造体
 type RequestData struct {
-	TicketService string    `json:"ticketService"`
-	RegistDate    time.Time `json:"registDate"`
-	EventDate     time.Time `json:"eventDate"`
-	EventPlace    string    `json:"eventPlace"`
-	EventName     string    `json:"eventName"`
-	TicketCount   int       `json:"ticketCount"`
-	IsReserve     bool      `json:"isReserve"`
-	PayLimitDate  time.Time `json:"payLimitDate"`
+	TicketService    string    `json:"ticketService"`
+	EventName        string    `json:"eventName"`
+	EventDate        time.Time `json:"eventDate"`
+	EventPlace       string    `json:"eventPlace"`
+	TicketRegistDate time.Time `json:"ticketRegistDate"`
+	TicketCount      int       `json:"ticketCount"`
+	IsReserve        bool      `json:"isReserve"`
+	PayLimitDate     time.Time `json:"payLimitDate"`
+	UserId           string    `json:"userId"`
+}
+
+// ユーザーごとの詳細情報を表す構造体
+type UserDetail struct {
+	UserId           string    `json:"userId"`
+	TicketRegistDate time.Time `json:"ticketRegistDate"`
+	TicketCount      int       `json:"ticketCount"`
+	IsReserve        bool      `json:"isReserve"`
+	PayLimitDate     time.Time `json:"payLimitDate"`
 }
 
 func main() {
@@ -73,29 +83,48 @@ func main() {
 		}()
 
 		// SQL文の準備
-		ticketTableName := "ticketList"
-		sql := fmt.Sprintf("INSERT INTO %s (ticketService, registDate, eventDate, eventPlace, eventName, ticketCount, isReserve, payLimitDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", ticketTableName)
-		stmt, err := tx.Prepare(sql)
+		ticketTableName := "tickets"
+		sql := fmt.Sprintf("INSERT INTO %s (ticketService, ticketRegistDate, eventDate, eventPlace, eventName) VALUES (?, ?, ?, ?, ?)", ticketTableName)
+		ticketStmt, err := tx.Prepare(sql)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, sql), http.StatusInternalServerError)
 			return
 		}
 		log.Printf("SQL statement prepared: %s", sql)
-		defer stmt.Close()
+		defer ticketStmt.Close()
+
+		// ユーザー詳細情報の挿入
+		userTableName := "user_details"
+		userDetailSQL := fmt.Sprintf("INSERT INTO user_details (userId, ticketRegistDate, ticketCount, isReserve, payLimitDate) VALUES (?, ?, ?, ?, ?): %s", userTableName)
+		userDetailStmt, err := tx.Prepare(userDetailSQL)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, sql), http.StatusInternalServerError)
+			return
+		}
+		log.Printf("SQL statement prepared: %s", sql)
+		defer ticketStmt.Close()
 
 		// SQLの実行
-		_, err = stmt.Exec(
+		_, err = ticketStmt.Exec(
 			reqData.TicketService,
-			reqData.RegistDate,
 			reqData.EventDate,
 			reqData.EventPlace,
 			reqData.EventName,
+		)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
+			return
+		}
+		_, err = userDetailStmt.Exec(
+			reqData.UserId,
+			reqData.TicketRegistDate,
 			reqData.TicketCount,
 			reqData.IsReserve,
 			reqData.PayLimitDate,
 		)
+
 		if err != nil {
-			http.Error(w, "データの挿入に失敗しました:", http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
 			return
 		}
 
