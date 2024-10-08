@@ -5,7 +5,7 @@ CREATE TABLE tickets (
   ticketService VARCHAR(100),
   eventName VARCHAR(100),
   eventDate DATE,
-  eventPlace VARCHAR(100),
+  eventPlace VARCHAR(100)
 );
 
 CREATE TABLE user_details (
