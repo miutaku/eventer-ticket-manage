@@ -29,4 +29,5 @@ services:
     ports:
       - "3306:3306"
     volumes:
-      - ./init/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./sql/init.sql:/docker-entrypoint-initdb.d/init.sql
+      - ./sql/delete_expire_ticket.sql:/docker-entrypoint-initdb.d/delete_expire_ticket.sql
