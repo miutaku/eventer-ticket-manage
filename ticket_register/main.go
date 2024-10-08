@@ -107,9 +107,9 @@ func main() {
 		// SQLの実行
 		_, err = ticketStmt.Exec(
 			reqData.TicketService,
+			reqData.EventName,
 			reqData.EventDate,
 			reqData.EventPlace,
-			reqData.EventName,
 		)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
