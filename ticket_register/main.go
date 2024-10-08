@@ -7,14 +7,10 @@ import (
 	"log"
 	"net/http"
 	"os"
-	"regexp"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
 )
-
-// 正規表現で許可するテーブル名文字列
-var validTableNameRegex = regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
 
 // JSONリクエストの構造体
 type RequestData struct {
@@ -61,14 +57,6 @@ func main() {
 		}
 		log.Printf("Request Data: %+v\n", reqData)
 
-		// テーブル名を動的に設定し、正規表現で検証
-		tableName := reqData.TicketService
-		if !validTableNameRegex.MatchString(tableName) {
-			http.Error(w, "不正なテーブル名です:", http.StatusBadRequest)
-			return
-		}
-		log.Print("Table Name: ", tableName)
-
 		// トランザクション開始
 		tx, err := db.Begin()
 		if err != nil {
@@ -85,7 +73,8 @@ func main() {
 		}()
 
 		// SQL文の準備
-		sql := fmt.Sprintf("INSERT INTO %s (ticketService, registDate, eventDate, eventPlace, eventName, ticketCount, isReserve, payLimitDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", tableName)
+		ticketTableName := "ticketList"
+		sql := fmt.Sprintf("INSERT INTO %s (ticketService, registDate, eventDate, eventPlace, eventName, ticketCount, isReserve, payLimitDate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", ticketTableName)
 		stmt, err := tx.Prepare(sql)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, sql), http.StatusInternalServerError)

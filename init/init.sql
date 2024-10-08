@@ -1,6 +1,6 @@
 CREATE DATABASE IF NOT EXISTS ticket_register;
 USE ticket_register;
-CREATE TABLE exampleService (
+CREATE TABLE ticketList (
     id INT AUTO_INCREMENT PRIMARY KEY,
     ticketService VARCHAR(100) NOT NULL,
     registDate DATETIME NOT NULL,
