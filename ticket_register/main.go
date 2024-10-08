@@ -95,7 +95,7 @@ func main() {
 
 		// ユーザー詳細情報の挿入
 		userTableName := "user_details"
-		userDetailSQL := fmt.Sprintf("INSERT INTO user_details (userId, ticketRegistDate, ticketCount, isReserve, payLimitDate) VALUES (?, ?, ?, ?, ?): %s", userTableName)
+		userDetailSQL := fmt.Sprintf("INSERT INTO %s (userId, ticketRegistDate, ticketCount, isReserve, payLimitDate) VALUES (?, ?, ?, ?, ?)", userTableName)
 		userDetailStmt, err := tx.Prepare(userDetailSQL)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, sql), http.StatusInternalServerError)
