@@ -116,16 +116,25 @@ func main() {
 		defer ticketStmt.Close()
 
 		// SQLの実行
-		_, err = ticketStmt.Exec(
+		result, err := ticketStmt.Exec(
 			reqData.TicketService,
 			reqData.EventName,
 			reqData.EventDate,
 			reqData.EventPlace,
 		)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
+			http.Error(w, fmt.Sprintf("チケット情報の挿入に失敗しました: %s", err), http.StatusInternalServerError)
 			return
 		}
+
+		// AUTO INCREMENTで生成されたチケットIDを取得
+		ticketID, err := result.LastInsertId()
+		if err != nil {
+			http.Error(w, fmt.Sprintf("チケットIDの取得に失敗しました: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		// ユーザー詳細情報の挿入
 		_, err = userDetailStmt.Exec(
 			reqData.UserId,
 			reqData.TicketRegistDate,
@@ -134,22 +143,37 @@ func main() {
 			reqData.PayLimitDate,
 		)
 
+		// ユーザーとチケットの関連付け
+		_, err = userTicketsStmt.Exec(
+			reqData.UserId,
+			ticketID,
+		)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("ユーザーとチケットの関連付けに失敗しました: %s", err), http.StatusInternalServerError)
+			return
+		}
+
 		if err != nil {
 			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
 			return
 		}
 
+		// ユーザーとチケットの関連付け
 		_, err = userTicketsStmt.Exec(
 			reqData.UserId,
-			reqData.TicketRegistDate,
-			reqData.TicketCount,
-			reqData.IsReserve,
-			reqData.PayLimitDate,
+			ticketID,
 		)
 
 		if err != nil {
 			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
 			return
+		}
+
+		// トランザクションのコミットまたはロールバック
+		if err != nil {
+			tx.Rollback()
+		} else {
+			err = tx.Commit()
 		}
 
 		fmt.Fprintf(w, "Data inserted successfully")
