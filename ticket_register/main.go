@@ -84,7 +84,7 @@ func main() {
 
 		// SQL文の準備
 		ticketTableName := "tickets"
-		sql := fmt.Sprintf("INSERT INTO %s (ticketService, eventName, eventDate, eventPlace) VALUES (?, ?, ?, ?, ?)", ticketTableName)
+		sql := fmt.Sprintf("INSERT INTO %s (ticketService, eventName, eventDate, eventPlace) VALUES (?, ?, ?, ?)", ticketTableName)
 		ticketStmt, err := tx.Prepare(sql)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, sql), http.StatusInternalServerError)
