@@ -101,7 +101,18 @@ func main() {
 			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, sql), http.StatusInternalServerError)
 			return
 		}
-		log.Printf("SQL statement prepared: %s", sql)
+		log.Printf("SQL statement prepared: %s", userDetailSQL)
+		defer ticketStmt.Close()
+
+		// ユーザーの所有しているチケット情報の挿入
+		userTicketsTableName := "user_tickets"
+		userTicketsSQL := fmt.Sprintf("INSERT INTO %s (userID, ticketID) VALUES (?, ?)", userTicketsTableName)
+		userTicketsStmt, err := tx.Prepare(userTicketsSQL)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, sql), http.StatusInternalServerError)
+			return
+		}
+		log.Printf("SQL statement prepared: %s", userTicketsSQL)
 		defer ticketStmt.Close()
 
 		// SQLの実行
@@ -116,6 +127,19 @@ func main() {
 			return
 		}
 		_, err = userDetailStmt.Exec(
+			reqData.UserId,
+			reqData.TicketRegistDate,
+			reqData.TicketCount,
+			reqData.IsReserve,
+			reqData.PayLimitDate,
+		)
+
+		if err != nil {
+			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
+			return
+		}
+
+		_, err = userTicketsStmt.Exec(
 			reqData.UserId,
 			reqData.TicketRegistDate,
 			reqData.TicketCount,

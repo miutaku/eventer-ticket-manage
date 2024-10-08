@@ -16,3 +16,11 @@ CREATE TABLE user_details (
   payLimitDate DATETIME,
   PRIMARY KEY (userID, ticketRegistDate)
 );
+
+CREATE TABLE user_tickets (
+  userID VARCHAR(100),
+  ticketID BIGINT,
+  PRIMARY KEY (userID, ticketID),
+  FOREIGN KEY (userID) REFERENCES user_details(userID),
+  FOREIGN KEY (ticketID) REFERENCES tickets(ticketID)
+);
