@@ -22,6 +22,7 @@ type RequestData struct {
 	TicketCount      int       `json:"ticketCount"`
 	IsReserve        bool      `json:"isReserve"`
 	PayLimitDate     time.Time `json:"payLimitDate"`
+	IsPaid           bool      `json:"isPaid"`
 	UserId           string    `json:"userId"`
 }
 
@@ -91,7 +92,7 @@ func main() {
 		defer ticketStmt.Close()
 
 		// user_tickets
-		userTicketSQL := "INSERT INTO user_tickets (userId, ticketId,  ticketCount, isReserve, payLimitDate) VALUES (?, ?, ?, ?, ?)"
+		userTicketSQL := "INSERT INTO user_tickets (userId, ticketId,  ticketCount, isReserve, payLimitDate, isPaid) VALUES (?, ?, ?, ?, ?, ?)"
 		userTicketStmt, err := tx.Prepare(userTicketSQL)
 		if err != nil {
 			handleError(w, err, http.StatusInternalServerError)
@@ -143,6 +144,7 @@ func main() {
 			reqData.TicketCount,
 			reqData.IsReserve,
 			reqData.PayLimitDate,
+			reqData.IsPaid,
 		)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
