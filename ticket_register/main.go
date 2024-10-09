@@ -81,8 +81,7 @@ func main() {
 
 		// SQL文の準備
 		// tickets
-		ticketTableName := "tickets"
-		ticketSQL := fmt.Sprintf("INSERT INTO %s (ticketService, ticketRegistDate, eventName, eventDate, eventPlace) VALUES (?, ?, ?, ?, ?)", ticketTableName)
+		ticketSQL := "INSERT INTO tickets (ticketService, ticketRegistDate, eventName, eventDate, eventPlace) VALUES (?, ?, ?, ?, ?)"
 		ticketStmt, err := tx.Prepare(ticketSQL)
 		if err != nil {
 			handleError(w, err, http.StatusInternalServerError)
@@ -92,8 +91,7 @@ func main() {
 		defer ticketStmt.Close()
 
 		// user_tickets
-		userTicketTableName := "user_tickets"
-		userTicketSQL := fmt.Sprintf("INSERT INTO %s (userId, ticketId,  ticketCount, isReserve, payLimitDate) VALUES (?, ?, ?, ?, ?)", userTicketTableName)
+		userTicketSQL := "INSERT INTO user_tickets (userId, ticketId,  ticketCount, isReserve, payLimitDate) VALUES (?, ?, ?, ?, ?)"
 		userTicketStmt, err := tx.Prepare(userTicketSQL)
 		if err != nil {
 			handleError(w, err, http.StatusInternalServerError)
@@ -104,7 +102,7 @@ func main() {
 
 		// SQLの実行
 		// tickets
-		selectSQL := fmt.Sprintf("SELECT ticketId FROM %s WHERE eventName = ? AND eventDate = ? AND eventPlace = ?", ticketTableName) // 重複チェック
+		selectSQL := "SELECT ticketId FROM tickets WHERE eventName = ? AND eventDate = ? AND eventPlace = ?" // 重複チェック
 		var ticketId int64
 		err = tx.QueryRow(selectSQL, reqData.EventName, reqData.EventDate, reqData.EventPlace).Scan(&ticketId)
 
