@@ -25,15 +25,6 @@ type RequestData struct {
 	UserId           string    `json:"userId"`
 }
 
-// ユーザーごとの詳細情報を表す構造体
-type UserDetail struct {
-	UserId           string    `json:"userId"`
-	TicketRegistDate time.Time `json:"ticketRegistDate"`
-	TicketCount      int       `json:"ticketCount"`
-	IsReserve        bool      `json:"isReserve"`
-	PayLimitDate     time.Time `json:"payLimitDate"`
-}
-
 func main() {
 	// 環境変数から接続情報を取得
 	user := os.Getenv("MYSQL_USER")
