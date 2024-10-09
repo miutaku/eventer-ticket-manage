@@ -17,5 +17,6 @@ CREATE TABLE user_tickets (
   ticketCount INT,
   isReserve BOOLEAN,
   payLimitDate DATETIME,
+  isPaid BOOLEAN,
   FOREIGN KEY (ticketId) REFERENCES tickets(ticketId)
 );
