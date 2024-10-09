@@ -25,6 +25,10 @@ type RequestData struct {
 	UserId           string    `json:"userId"`
 }
 
+func handleError(w http.ResponseWriter, err error, status int) {
+	log.Printf("Error: %s", err)
+	http.Error(w, fmt.Sprintf("An error occurred: %s", err), status)
+}
 func main() {
 	// 環境変数から接続情報を取得
 	user := os.Getenv("MYSQL_USER")
@@ -81,7 +85,7 @@ func main() {
 		ticketSQL := fmt.Sprintf("INSERT INTO %s (ticketService, ticketRegistDate, eventName, eventDate, eventPlace) VALUES (?, ?, ?, ?, ?)", ticketTableName)
 		ticketStmt, err := tx.Prepare(ticketSQL)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, ticketSQL), http.StatusInternalServerError)
+			handleError(w, err, http.StatusInternalServerError)
 			return
 		}
 		log.Printf("SQL statement prepared: %s", ticketSQL)
@@ -92,7 +96,7 @@ func main() {
 		userTicketSQL := fmt.Sprintf("INSERT INTO %s (userId, ticketId,  ticketCount, isReserve, payLimitDate) VALUES (?, ?, ?, ?, ?)", userTicketTableName)
 		userTicketStmt, err := tx.Prepare(userTicketSQL)
 		if err != nil {
-			http.Error(w, fmt.Sprintf("SQL文の準備に失敗しました: %s, SQL: %s", err, userTicketSQL), http.StatusInternalServerError)
+			handleError(w, err, http.StatusInternalServerError)
 			return
 		}
 		log.Printf("SQL statement prepared: %s", userTicketSQL)
