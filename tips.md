@@ -2,23 +2,25 @@
 
 ## 同日で被っているチケット
 
-userIdごとに、同日で被るチケットが何枚あるか(ticket_count)を出してくれるクエリ
+userIdごとに、同日で有効な(支払済)被るチケットが何枚あるか(ticket_count)を出してくれるクエリ
 ```sql
 SELECT
-  u.userId,
-  MAX(t.eventName) AS eventName,
-  DATE(t.eventDate) AS eventDate,
-  COUNT(*) AS ticket_count
+    u.userId,
+    MAX(t.eventName) AS eventName,
+    DATE(t.eventDate) AS eventDate,
+    COUNT(*) AS ticket_count
 FROM
-  user_tickets u
+    user_tickets u
 INNER JOIN tickets t ON u.ticketId = t.ticketId
+WHERE
+    (u.isPaid = 1) OR (u.isPaid = 0 AND u.payLimitDate > CURDATE())
 GROUP BY
-  u.userId, DATE(t.eventDate)
+    u.userId, DATE(t.eventDate)
 HAVING
-  COUNT(*) > 1;
+    COUNT(*) > 1;
 ```
+
 ```
-mysql> SELECT  u.userId,  MAX(t.eventName) AS eventName,  DATE(t.eventDate) AS eventDate,  COUNT(*) AS ticket_count FROM  user_tickets u INNER JOIN tickets t ON u.ticketId = t.ticketId GROUP BY  u.userId, DATE(t.eventDate) HAVING  COUNT(*) > 1;
 +---------------+----------------+------------+--------------+
 | userId        | eventName      | eventDate  | ticket_count |
 +---------------+----------------+------------+--------------+
