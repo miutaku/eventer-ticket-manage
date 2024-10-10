@@ -12,20 +12,6 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 )
 
-// JSONリクエストの構造体
-type RequestData struct {
-	TicketService    string    `json:"ticketService"`
-	EventName        string    `json:"eventName"`
-	EventDate        time.Time `json:"eventDate"`
-	EventPlace       string    `json:"eventPlace"`
-	TicketRegistDate time.Time `json:"ticketRegistDate"`
-	TicketCount      int       `json:"ticketCount"`
-	IsReserve        bool      `json:"isReserve"`
-	PayLimitDate     time.Time `json:"payLimitDate"`
-	IsPaid           bool      `json:"isPaid"`
-	UserId           string    `json:"userId"`
-}
-
 func handleError(w http.ResponseWriter, err error, status int) {
 	log.Printf("Error: %s", err)
 	http.Error(w, fmt.Sprintf("An error occurred: %s", err), status)
@@ -52,9 +38,86 @@ func main() {
 	log.Println("MySQLへの接続に成功しました")
 	defer db.Close()
 
-	// HTTPハンドラー
+	// チケット情報更新API
+	http.HandleFunc("/update", func(w http.ResponseWriter, r *http.Request) {
+		// リクエストボディの読み込み
+		type UpdateData struct {
+			UserId     string    `json:"userId"`
+			EventName  string    `json:"eventName"`
+			EventDate  time.Time `json:"eventDate"`
+			EventPlace string    `json:"eventPlace"`
+			IsPaid     bool      `json:"isPaid"`
+		}
+		var reqData UpdateData
+		err := json.NewDecoder(r.Body).Decode(&reqData)
+		if err != nil {
+			http.Error(w, "JSONデコードに失敗しました:", http.StatusBadRequest)
+			return
+		}
+
+		// トランザクション開始
+		tx, err := db.Begin()
+		if err != nil {
+			http.Error(w, "トランザクション開始に失敗しました:", http.StatusInternalServerError)
+			return
+		}
+		defer func() {
+			if r := recover(); r != nil {
+				log.Printf("Recovered from panic: %v", r)
+				err = tx.Rollback()
+			} else if err != nil {
+				err = tx.Rollback()
+			} else {
+				err = tx.Commit()
+			}
+		}()
+
+		// ticketsテーブルからticketIdを取得
+		PaidSelectSQL := "SELECT ticketId FROM tickets WHERE eventName = ? AND eventDate = ? AND eventPlace = ?"
+		var ticketId int64
+		err = tx.QueryRow(PaidSelectSQL, reqData.EventName, reqData.EventDate, reqData.EventPlace).Scan(&ticketId)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				http.Error(w, "指定されたイベントが見つかりません:", http.StatusNotFound)
+			} else {
+				handleError(w, err, http.StatusInternalServerError)
+			}
+			return
+		}
+
+		// user_ticketsテーブルを更新
+		paidUpdateSQL := "UPDATE user_tickets SET isPaid = ? WHERE userId = ? AND ticketId = ?"
+		updateStmt, err := tx.Prepare(paidUpdateSQL)
+		if err != nil {
+			handleError(w, err, http.StatusInternalServerError)
+			return
+		}
+		defer updateStmt.Close()
+
+		_, err = updateStmt.Exec(reqData.IsPaid, reqData.UserId, ticketId)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("データの更新に失敗しました: %s", err), http.StatusInternalServerError)
+		} else {
+			fmt.Fprintf(w, "Data updated successfully")
+		}
+	})
+
+	// チケット新規登録API
 	http.HandleFunc("/insert", func(w http.ResponseWriter, r *http.Request) {
 		// リクエストボディの読み込み
+		// JSONリクエストの構造体
+		type RequestData struct {
+			TicketService    string    `json:"ticketService"`
+			EventName        string    `json:"eventName"`
+			EventDate        time.Time `json:"eventDate"`
+			EventPlace       string    `json:"eventPlace"`
+			TicketRegistDate time.Time `json:"ticketRegistDate"`
+			TicketCount      int       `json:"ticketCount"`
+			IsReserve        bool      `json:"isReserve"`
+			PayLimitDate     time.Time `json:"payLimitDate"`
+			IsPaid           bool      `json:"isPaid"`
+			UserId           string    `json:"userId"`
+		}
 		var reqData RequestData
 		err := json.NewDecoder(r.Body).Decode(&reqData)
 		if err != nil {
