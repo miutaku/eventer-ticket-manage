@@ -22,9 +22,9 @@ services:
     container_name: ticket-management-db
     environment:
       MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_USER: ticket_register
-      MYSQL_PASSWORD: ticket_register_password
-      MYSQL_DATABASE: ticket_register
+      MYSQL_USER: 
+      MYSQL_PASSWORD: ticket_management_password
+      MYSQL_DATABASE: ticket_management
       MYSQL_CHARSET: utf8mb4
     ports:
       - "3306:3306"

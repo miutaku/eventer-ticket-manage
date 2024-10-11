@@ -1,5 +1,5 @@
-CREATE DATABASE IF NOT EXISTS ticket_register;
-USE ticket_register;
+CREATE DATABASE IF NOT EXISTS ticket_management;
+USE ticket_management;
 
 CREATE TABLE tickets (
   ticketId BIGINT AUTO_INCREMENT PRIMARY KEY,
