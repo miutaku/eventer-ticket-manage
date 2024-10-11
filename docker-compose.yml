@@ -2,9 +2,9 @@ version: '3.8'
 
 services:
   ticket_register:
-    container_name: ticket-register-api
+    container_name: ticket-management-api
     build:
-      context: ./ticket_register
+      context: ./src
       dockerfile: Dockerfile
     environment:
       MYSQL_USER: ticket_register
@@ -19,7 +19,7 @@ services:
 
   ticket_register_db:
     image: mysql:8.0
-    container_name: ticket-register-db
+    container_name: ticket-management-db
     environment:
       MYSQL_ROOT_PASSWORD: root_password
       MYSQL_USER: ticket_register
