@@ -104,7 +104,6 @@ func main() {
 
 	// チケット新規登録API
 	http.HandleFunc("/insert", func(w http.ResponseWriter, r *http.Request) {
-		// リクエストボディの読み込み
 		type RequestData struct {
 			TicketService    string    `json:"ticketService"`
 			EventName        string    `json:"eventName"`
@@ -117,6 +116,7 @@ func main() {
 			IsPaid           bool      `json:"isPaid"`
 			UserId           string    `json:"userId"`
 		}
+
 		var reqData RequestData
 		err := json.NewDecoder(r.Body).Decode(&reqData)
 		if err != nil {
@@ -142,77 +142,67 @@ func main() {
 			}
 		}()
 
-		// SQL文の準備
-		// tickets
-		ticketSQL := "INSERT INTO tickets (ticketService, ticketRegistDate, eventName, eventDate, eventPlace) VALUES (?, ?, ?, ?, ?)"
-		ticketStmt, err := tx.Prepare(ticketSQL)
-		if err != nil {
-			handleError(w, err, http.StatusInternalServerError)
-			return
-		}
-		defer ticketStmt.Close()
+		// 同日のチケットが既に存在するか確認（丸め処理）
+		selectSQL := "SELECT ticketId FROM tickets WHERE eventName = ? AND DATE(eventDate) = DATE(?) AND eventPlace = ?"
+		var existingTicketId int64
+		err = tx.QueryRow(selectSQL, reqData.EventName, reqData.EventDate, reqData.EventPlace).Scan(&existingTicketId)
 
-		// user_tickets
-		userTicketSQL := "INSERT INTO user_tickets (userId, ticketId, ticketCount, isReserve, payLimitDate, isPaid, isDuplicate) VALUES (?, ?, ?, ?, ?, ?, ?)"
-		userTicketStmt, err := tx.Prepare(userTicketSQL)
-		if err != nil {
-			handleError(w, err, http.StatusInternalServerError)
-			return
-		}
-		defer userTicketStmt.Close()
-
-		// SQLの実行
-		selectSQL := "SELECT ticketId FROM tickets WHERE eventName = ? AND eventDate = ? AND eventPlace = ?" // 重複チェック
+		// 新規チケット挿入
 		var ticketId int64
-		err = tx.QueryRow(selectSQL, reqData.EventName, reqData.EventDate, reqData.EventPlace).Scan(&ticketId)
-
-		isDuplicate := false // 重複フラグ
-		if err != nil && err != sql.ErrNoRows {
-			http.Error(w, fmt.Sprintf("チケット重複確認中にエラーが発生しました: %s", err), http.StatusInternalServerError)
-			return
-		}
-
-		if err == nil {
-			// チケットが既に存在する場合
-			log.Printf("既存のチケットが見つかりました。ticketId: %d", ticketId)
-			isDuplicate = true // 重複フラグをtrueに設定
-		} else {
-			// チケットが存在しない場合、新規に挿入
-			result, err := ticketStmt.Exec(
-				reqData.TicketService,
-				reqData.TicketRegistDate,
-				reqData.EventName,
-				reqData.EventDate,
-				reqData.EventPlace,
-			)
+		if err == sql.ErrNoRows {
+			log.Println("このチケットはDBにまだ存在しません。新規チケットを挿入します。")
+			// 新規チケットを挿入
+			ticketSQL := "INSERT INTO tickets (ticketService, ticketRegistDate, eventName, eventDate, eventPlace) VALUES (?, ?, ?, ?, ?)"
+			result, err := tx.Exec(ticketSQL, reqData.TicketService, reqData.TicketRegistDate, reqData.EventName, reqData.EventDate, reqData.EventPlace)
 			if err != nil {
 				http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
 				return
 			}
-
 			ticketId, err = result.LastInsertId()
 			if err != nil {
 				http.Error(w, fmt.Sprintf("ticketIdの確認ができません: %s", err), http.StatusInternalServerError)
 				return
 			}
 			log.Printf("新しいチケットが挿入されました。ticketId: %d", ticketId)
+		} else if err != nil {
+			http.Error(w, fmt.Sprintf("チケット重複確認中にエラーが発生しました: %s", err), http.StatusInternalServerError)
+			return
+		} else {
+			log.Printf("既存のチケットが見つかりました。ticketId: %d", existingTicketId)
+			ticketId = existingTicketId
 		}
 
-		// user_ticketsにデータを挿入
-		_, err = userTicketStmt.Exec(
-			reqData.UserId,
-			ticketId,
-			reqData.TicketCount,
-			reqData.IsReserve,
-			reqData.PayLimitDate,
-			reqData.IsPaid,
-			isDuplicate, // 重複フラグをここで使う
-		)
+		// user_ticketsテーブルにおける重複確認
+		var isDuplicate bool
+		var duplicateTicketId int64
+		checkDuplicateSQL := `
+			SELECT ut.ticketId 
+			FROM user_tickets ut 
+			JOIN tickets t ON ut.ticketId = t.ticketId 
+			WHERE ut.userId = ? AND DATE(t.eventDate) = DATE(?)`
+
+		err = tx.QueryRow(checkDuplicateSQL, reqData.UserId, reqData.EventDate).Scan(&duplicateTicketId)
+
+		if err == sql.ErrNoRows {
+			isDuplicate = false
+			duplicateTicketId = 0
+		} else if err != nil {
+			http.Error(w, fmt.Sprintf("重複確認中にエラーが発生しました: %s", err), http.StatusInternalServerError)
+			return
+		} else {
+			isDuplicate = true
+			log.Printf("重複チケットが見つかりました。duplicateTicketId: %d", duplicateTicketId)
+		}
+
+		// user_tickets挿入
+		userTicketSQL := "INSERT INTO user_tickets (userId, ticketId, ticketCount, isReserve, payLimitDate, isPaid, duplicateTicketId, isDuplicate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
+		_, err = tx.Exec(userTicketSQL, reqData.UserId, ticketId, reqData.TicketCount, reqData.IsReserve, reqData.PayLimitDate, reqData.IsPaid, duplicateTicketId, isDuplicate)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
 			return
 		}
 
+		log.Printf("ユーザーのチケット情報が挿入されました。userId: %s, ticketId: %d, isDuplicate: %t", reqData.UserId, ticketId, isDuplicate)
 		fmt.Fprintf(w, "Data inserted successfully")
 	})
 
