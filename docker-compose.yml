@@ -27,7 +27,6 @@ services:
       MYSQL_PASSWORD: ticket_management_password
       MYSQL_DATABASE: ticket_management
       MYSQL_CHARSET: utf8mb4
-      TZ: UTC
     ports:
       - "3306:3306"
     volumes:
