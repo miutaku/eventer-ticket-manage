@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -271,23 +272,25 @@ func main() {
 
 		// SQL文の準備
 		query := `
-        SELECT
-            u.userId,
-            t.eventName,
-            t.eventDate,
-            u.ticketCount
-        FROM
-            user_tickets u
-        INNER JOIN tickets t ON u.ticketId = t.ticketId
-        WHERE
-            u.userId = ?
-            AND
-            (
-                u.isPaid = 1
-                OR
-                (u.isPaid = 0 AND u.payLimitDate > CURDATE())
-            );
-    `
+			SELECT
+				u.userId,
+				t.eventName,
+				t.eventDate,
+				u.ticketCount,
+				u.isDuplicate,
+				u.duplicateTicketId
+			FROM
+				user_tickets u
+			INNER JOIN tickets t ON u.ticketId = t.ticketId
+			WHERE
+				u.userId = ?
+				AND
+				(
+					u.isPaid = 1
+					OR
+					(u.isPaid = 0 AND u.payLimitDate > CURDATE())
+				);
+		`
 
 		// SQLの実行
 		rows, err := db.Query(query, userId)
@@ -299,24 +302,60 @@ func main() {
 
 		// 結果を格納するスライス
 		var results []struct {
-			UserId      string    `json:"userId"`
-			EventName   string    `json:"eventName"`
-			EventDate   time.Time `json:"eventDate"`
-			TicketCount int       `json:"ticketCount"`
+			UserId            string    `json:"userId"`
+			EventName         string    `json:"eventName"`
+			EventDate         time.Time `json:"eventDate"`
+			TicketCount       int       `json:"ticketCount"`
+			IsDuplicate       bool      `json:"isDuplicate"`
+			DuplicateTicketId []int     `json:"duplicateTicketId"`
 		}
 
 		for rows.Next() {
-			var r struct {
-				UserId      string    `json:"userId"`
-				EventName   string    `json:"eventName"`
-				EventDate   time.Time `json:"eventDate"`
-				TicketCount int       `json:"ticketCount"`
-			}
-			if err := rows.Scan(&r.UserId, &r.EventName, &r.EventDate, &r.TicketCount); err != nil {
+			var (
+				r struct {
+					UserId            string    `json:"userId"`
+					EventName         string    `json:"eventName"`
+					EventDate         time.Time `json:"eventDate"`
+					TicketCount       int       `json:"ticketCount"`
+					IsDuplicate       bool      `json:"isDuplicate"`
+					DuplicateTicketId string    `json:"duplicateTicketId"` // 一旦stringとして取得
+				}
+				parsedDuplicateIds []int // パース後のduplicateTicketId用
+			)
+
+			// 値をスキャン
+			if err := rows.Scan(&r.UserId, &r.EventName, &r.EventDate, &r.TicketCount, &r.IsDuplicate, &r.DuplicateTicketId); err != nil {
 				handleError(w, err, http.StatusInternalServerError)
 				return
 			}
-			results = append(results, r)
+
+			// duplicateTicketIdをカンマ区切りで分割し、数値に変換
+			duplicateIdsStr := strings.Split(r.DuplicateTicketId, ",")
+			for _, idStr := range duplicateIdsStr {
+				id, err := strconv.Atoi(idStr)
+				if err != nil {
+					handleError(w, err, http.StatusInternalServerError)
+					return
+				}
+				parsedDuplicateIds = append(parsedDuplicateIds, id)
+			}
+
+			// 構造体に格納
+			results = append(results, struct {
+				UserId            string    `json:"userId"`
+				EventName         string    `json:"eventName"`
+				EventDate         time.Time `json:"eventDate"`
+				TicketCount       int       `json:"ticketCount"`
+				IsDuplicate       bool      `json:"isDuplicate"`
+				DuplicateTicketId []int     `json:"duplicateTicketId"`
+			}{
+				UserId:            r.UserId,
+				EventName:         r.EventName,
+				EventDate:         r.EventDate,
+				TicketCount:       r.TicketCount,
+				IsDuplicate:       r.IsDuplicate,
+				DuplicateTicketId: parsedDuplicateIds,
+			})
 		}
 
 		// JSONエンコードしてレスポンスを返す
