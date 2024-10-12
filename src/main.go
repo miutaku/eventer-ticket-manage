@@ -174,29 +174,50 @@ func main() {
 
 		// user_ticketsテーブルにおける重複確認
 		var isDuplicate bool
-		var duplicateTicketId int64
+		var duplicateTicketIds []int64 // 重複チケットのIDを格納するスライス
 		checkDuplicateSQL := `
 			SELECT ut.ticketId 
 			FROM user_tickets ut 
 			JOIN tickets t ON ut.ticketId = t.ticketId 
 			WHERE ut.userId = ? AND DATE(t.eventDate) = DATE(?)`
 
-		err = tx.QueryRow(checkDuplicateSQL, reqData.UserId, reqData.EventDate).Scan(&duplicateTicketId)
-
-		if err == sql.ErrNoRows {
-			isDuplicate = false
-			duplicateTicketId = 0
-		} else if err != nil {
+		rows, err := tx.Query(checkDuplicateSQL, reqData.UserId, reqData.EventDate)
+		if err != nil {
 			http.Error(w, fmt.Sprintf("重複確認中にエラーが発生しました: %s", err), http.StatusInternalServerError)
 			return
-		} else {
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var duplicateTicketId int64
+			if err := rows.Scan(&duplicateTicketId); err != nil {
+				http.Error(w, fmt.Sprintf("重複チケットのID取得中にエラーが発生しました: %s", err), http.StatusInternalServerError)
+				return
+			}
+			duplicateTicketIds = append(duplicateTicketIds, duplicateTicketId)
+		}
+
+		if len(duplicateTicketIds) > 0 {
 			isDuplicate = true
-			log.Printf("重複チケットが見つかりました。duplicateTicketId: %d", duplicateTicketId)
+			log.Printf("重複チケットが見つかりました。duplicateTicketIds: %v", duplicateTicketIds)
+		} else {
+			isDuplicate = false
+		}
+
+		// duplicateTicketId をカンマ区切りの文字列に変換
+		var duplicateTicketIdStr string
+		if isDuplicate {
+			for i, id := range duplicateTicketIds {
+				if i > 0 {
+					duplicateTicketIdStr += ","
+				}
+				duplicateTicketIdStr += fmt.Sprintf("%d", id)
+			}
 		}
 
 		// user_tickets挿入
 		userTicketSQL := "INSERT INTO user_tickets (userId, ticketId, ticketCount, isReserve, payLimitDate, isPaid, duplicateTicketId, isDuplicate) VALUES (?, ?, ?, ?, ?, ?, ?, ?)"
-		_, err = tx.Exec(userTicketSQL, reqData.UserId, ticketId, reqData.TicketCount, reqData.IsReserve, reqData.PayLimitDate, reqData.IsPaid, duplicateTicketId, isDuplicate)
+		_, err = tx.Exec(userTicketSQL, reqData.UserId, ticketId, reqData.TicketCount, reqData.IsReserve, reqData.PayLimitDate, reqData.IsPaid, duplicateTicketIdStr, isDuplicate)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
 			return
