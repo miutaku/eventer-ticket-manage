@@ -40,7 +40,7 @@ func main() {
 	defer db.Close()
 
 	// チケット情報更新API
-	http.HandleFunc("/update", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/update/paid", func(w http.ResponseWriter, r *http.Request) {
 		// リクエストボディの読み込み
 		type UpdateData struct {
 			UserId     string    `json:"userId"`
