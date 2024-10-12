@@ -217,7 +217,7 @@ func main() {
 	})
 
 	// ユーザーのチケット情報取得API
-	http.HandleFunc("/userTickets", func(w http.ResponseWriter, r *http.Request) {
+	http.HandleFunc("/fetchUserTickets", func(w http.ResponseWriter, r *http.Request) {
 		// リクエストからユーザーIDを抽出
 		userId := r.URL.Query().Get("userId")
 		if userId == "" {
