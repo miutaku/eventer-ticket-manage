@@ -105,7 +105,6 @@ func main() {
 	// チケット新規登録API
 	http.HandleFunc("/insert", func(w http.ResponseWriter, r *http.Request) {
 		// リクエストボディの読み込み
-		// JSONリクエストの構造体
 		type RequestData struct {
 			TicketService    string    `json:"ticketService"`
 			EventName        string    `json:"eventName"`
@@ -151,25 +150,23 @@ func main() {
 			handleError(w, err, http.StatusInternalServerError)
 			return
 		}
-		log.Printf("SQL statement prepared: %s", ticketSQL)
 		defer ticketStmt.Close()
 
 		// user_tickets
-		userTicketSQL := "INSERT INTO user_tickets (userId, ticketId,  ticketCount, isReserve, payLimitDate, isPaid) VALUES (?, ?, ?, ?, ?, ?)"
+		userTicketSQL := "INSERT INTO user_tickets (userId, ticketId, ticketCount, isReserve, payLimitDate, isPaid, isDuplicate) VALUES (?, ?, ?, ?, ?, ?, ?)"
 		userTicketStmt, err := tx.Prepare(userTicketSQL)
 		if err != nil {
 			handleError(w, err, http.StatusInternalServerError)
 			return
 		}
-		log.Printf("SQL statement prepared: %s", userTicketSQL)
 		defer userTicketStmt.Close()
 
 		// SQLの実行
-		// tickets
 		selectSQL := "SELECT ticketId FROM tickets WHERE eventName = ? AND eventDate = ? AND eventPlace = ?" // 重複チェック
 		var ticketId int64
 		err = tx.QueryRow(selectSQL, reqData.EventName, reqData.EventDate, reqData.EventPlace).Scan(&ticketId)
 
+		isDuplicate := false // 重複フラグ
 		if err != nil && err != sql.ErrNoRows {
 			http.Error(w, fmt.Sprintf("チケット重複確認中にエラーが発生しました: %s", err), http.StatusInternalServerError)
 			return
@@ -178,6 +175,7 @@ func main() {
 		if err == nil {
 			// チケットが既に存在する場合
 			log.Printf("既存のチケットが見つかりました。ticketId: %d", ticketId)
+			isDuplicate = true // 重複フラグをtrueに設定
 		} else {
 			// チケットが存在しない場合、新規に挿入
 			result, err := ticketStmt.Exec(
@@ -200,7 +198,7 @@ func main() {
 			log.Printf("新しいチケットが挿入されました。ticketId: %d", ticketId)
 		}
 
-		// user_tickets
+		// user_ticketsにデータを挿入
 		_, err = userTicketStmt.Exec(
 			reqData.UserId,
 			ticketId,
@@ -208,9 +206,11 @@ func main() {
 			reqData.IsReserve,
 			reqData.PayLimitDate,
 			reqData.IsPaid,
+			isDuplicate, // 重複フラグをここで使う
 		)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("データの挿入に失敗しました: %s", err), http.StatusInternalServerError)
+			return
 		}
 
 		fmt.Fprintf(w, "Data inserted successfully")
