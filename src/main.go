@@ -216,6 +216,63 @@ func main() {
 		fmt.Fprintf(w, "Data inserted successfully")
 	})
 
+	// ユーザーのチケット情報取得API
+	http.HandleFunc("/userTickets", func(w http.ResponseWriter, r *http.Request) {
+		// リクエストからユーザーIDを抽出
+		userId := r.URL.Query().Get("userId")
+		if userId == "" {
+			http.Error(w, "Missing userId parameter", http.StatusBadRequest)
+			return
+		}
+
+		// SQL文の準備
+		query := `
+			SELECT
+					u.userId,
+					t.eventName,
+					t.eventDate,
+					u.ticketCount
+			FROM
+					user_tickets u
+			INNER JOIN tickets t ON u.ticketId = t.ticketId
+			WHERE
+					u.userId = ? AND
+					(u.isPaid = 1 OR (u.isPaid = 0 AND u.payLimitDate > CURDATE()));
+	`
+
+		// SQLの実行
+		rows, err := db.Query(query, userId)
+		if err != nil {
+			handleError(w, err, http.StatusInternalServerError)
+			return
+		}
+		defer rows.Close()
+
+		// 結果を格納するスライス
+		var results []struct {
+			UserId      string    `json:"userId"`
+			EventName   string    `json:"eventName"`
+			EventDate   time.Time `json:"eventDate"`
+			TicketCount int       `json:"ticketCount"`
+		}
+
+		for rows.Next() {
+			var r struct {
+				UserId      string    `json:"userId"`
+				EventName   string    `json:"eventName"`
+				EventDate   time.Time `json:"eventDate"`
+				TicketCount int       `json:"ticketCount"`
+			}
+			if err := rows.Scan(&r.UserId, &r.EventName, &r.EventDate, &r.TicketCount); err != nil {
+				handleError(w, err, http.StatusInternalServerError)
+				return
+			}
+			results = append(results, r) // ここで新しい構造体を追加
+		}
+
+		json.NewEncoder(w).Encode(results)
+	})
+
 	// サーバーの起動
 	http.ListenAndServe(":8080", nil)
 }
