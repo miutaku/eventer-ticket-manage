@@ -30,7 +30,7 @@ func main() {
 	}
 
 	// MySQLへの接続
-	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=%s", user, password, host, database, charset)
+	dsn := fmt.Sprintf("%s:%s@tcp(%s)/%s?charset=%s&parseTime=true", user, password, host, database, charset)
 	db, err := sql.Open("mysql", dsn)
 	if err != nil {
 		log.Fatal("MySQLへの接続に失敗しました:", err)
@@ -227,18 +227,23 @@ func main() {
 
 		// SQL文の準備
 		query := `
-			SELECT
-					u.userId,
-					t.eventName,
-					t.eventDate,
-					u.ticketCount
-			FROM
-					user_tickets u
-			INNER JOIN tickets t ON u.ticketId = t.ticketId
-			WHERE
-					u.userId = ? AND
-					(u.isPaid = 1 OR (u.isPaid = 0 AND u.payLimitDate > CURDATE()));
-	`
+        SELECT
+            u.userId,
+            t.eventName,
+            t.eventDate,
+            u.ticketCount
+        FROM
+            user_tickets u
+        INNER JOIN tickets t ON u.ticketId = t.ticketId
+        WHERE
+            u.userId = ?
+            AND
+            (
+                u.isPaid = 1
+                OR
+                (u.isPaid = 0 AND u.payLimitDate > CURDATE())
+            );
+    `
 
 		// SQLの実行
 		rows, err := db.Query(query, userId)
@@ -267,10 +272,14 @@ func main() {
 				handleError(w, err, http.StatusInternalServerError)
 				return
 			}
-			results = append(results, r) // ここで新しい構造体を追加
+			results = append(results, r)
 		}
 
-		json.NewEncoder(w).Encode(results)
+		// JSONエンコードしてレスポンスを返す
+		w.Header().Set("Content-Type", "application/json")
+		if err := json.NewEncoder(w).Encode(results); err != nil {
+			handleError(w, err, http.StatusInternalServerError)
+		}
 	})
 
 	// サーバーの起動
