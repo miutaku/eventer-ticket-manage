@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	_ "github.com/go-sql-driver/mysql"
@@ -224,6 +225,38 @@ func main() {
 		}
 
 		log.Printf("ユーザーのチケット情報が挿入されました。userId: %s, ticketId: %d, isDuplicate: %t", reqData.UserId, ticketId, isDuplicate)
+
+		// 新規チケットが重複している場合、duplicateTicketIdStrを使って既存の重複チケットを更新
+		if isDuplicate {
+			// duplicateTicketIdsをスライスに変換
+			duplicateIds := strings.Split(duplicateTicketIdStr, ",")
+
+			// プレースホルダーを作成
+			placeholders := make([]string, len(duplicateIds))
+			for i := range duplicateIds {
+				placeholders[i] = "?"
+			}
+			placeholderStr := strings.Join(placeholders, ",")
+
+			updateSQL := fmt.Sprintf(`
+				UPDATE user_tickets
+				SET duplicateTicketId = ?, isDuplicate = ?
+				WHERE userId = ? AND ticketId IN (%s)
+			`, placeholderStr)
+
+			// 更新するチケットIDを引数に渡す
+			args := []any{duplicateTicketIdStr, true, reqData.UserId}
+			for _, id := range duplicateIds {
+				args = append(args, id)
+			}
+
+			_, err = tx.Exec(updateSQL, args...)
+			if err != nil {
+				http.Error(w, fmt.Sprintf("重複チケットの更新に失敗しました: %s", err), http.StatusInternalServerError)
+				return
+			}
+		}
+
 		fmt.Fprintf(w, "Data inserted successfully")
 	})
 
