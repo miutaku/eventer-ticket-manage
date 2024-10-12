@@ -1,30 +1,31 @@
 version: '3.8'
 
 services:
-  ticket_register:
+  ticket_manager-api:
     container_name: ticket-management-api
     build:
       context: ./src
       dockerfile: Dockerfile
     environment:
-      MYSQL_USER: ticket_register
-      MYSQL_PASSWORD: ticket_register_password
-      MYSQL_HOST: ticket-register-db
-      MYSQL_DATABASE: ticket_register
+      MYSQL_USER: ticket_management
+      MYSQL_PASSWORD: ticket_management_password
+      MYSQL_HOST: ticket-management-db
+      MYSQL_DATABASE: ticket_management
       MYSQL_CHARSET: utf8mb4
+      TZ: UTC # UTCで受け付けるようにするので、Parser側ではタイムゾーンをうまく変換すること
     ports:
       - "8080:8080"
     depends_on:
-      - ticket_register_db
+      - ticket_manager-db
 
-  ticket_register_db:
-    image: mysql:8.0
+  ticket_manager-db:
+    image: mysql:8.4
     container_name: ticket-management-db
     environment:
       MYSQL_ROOT_PASSWORD: root_password
-      MYSQL_USER: ticket_register
-      MYSQL_PASSWORD: ticket_register_password
-      MYSQL_DATABASE: ticket_register
+      MYSQL_USER: ticket_management
+      MYSQL_PASSWORD: ticket_management_password
+      MYSQL_DATABASE: ticket_management
       MYSQL_CHARSET: utf8mb4
     ports:
       - "3306:3306"
