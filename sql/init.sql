@@ -18,5 +18,7 @@ CREATE TABLE user_tickets (
   isReserve BOOLEAN,
   payLimitDate DATETIME,
   isPaid BOOLEAN,
+  duplicateTicketId VARCHAR(255),
+  isDuplicate BOOLEAN DEFAULT FALSE,
   FOREIGN KEY (ticketId) REFERENCES tickets(ticketId)
 );
