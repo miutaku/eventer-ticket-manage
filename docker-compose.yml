@@ -4,7 +4,7 @@ services:
   ticket_manager-api:
     container_name: ticket-management-api
     build:
-      context: ./src
+      context: ./src/ticket-management
       dockerfile: Dockerfile
     environment:
       MYSQL_USER: ticket_management
