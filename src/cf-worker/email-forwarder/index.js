@@ -19,7 +19,7 @@ export default {
         };
 
         // Define the target endpoint where you want to send the payload
-        const endpoint = 'https://apidebug.mtakumi-0925.workers.dev';
+        const endpoint = env.EMAIL_FORWARDER;
 
         // Send the POST request with the email content
         const response = await fetch(endpoint, {
