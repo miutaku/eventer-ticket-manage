@@ -9,7 +9,6 @@ jobs:
   deploy-cloudflare-worker:
     runs-on: ubuntu-latest
     timeout-minutes: 60
-    needs: test
 
     steps:
       - name: Checkout
