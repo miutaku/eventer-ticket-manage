@@ -1,0 +1,4 @@
+name = "email-forwarder"
+type = "javascript"
+account_id = "your-cloudflare-account-id"
+main = "index.js"
