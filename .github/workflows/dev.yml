@@ -25,3 +25,4 @@ jobs:
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
           wranglerVersion: "3.80.4"
           workingDirectory: ./src/cf-worker/email-forwarder
+          secret: EMAIL_FORWARDER=${{ secrets.EMAIL_FORWARDER }}
