@@ -10,15 +10,16 @@ export default {
       console.log('HTML', email.html);
       console.log('Text', email.text);
 
-      // Check if the email has a 'from' field and if the specific sender is included
-      if (email.from && email.from.value && email.from.value.some(sender => sender.address === 'lt-mail@l-tike.com')) {
+      // Check if the email body contains 'Lawson Entertainment, Inc.'
+      const bodyContent = email.text || email.html || '';
+      if (bodyContent.includes('Lawson Entertainment, Inc.')) {
         // Define the payload containing the email body
         const payload = {
           subject: email.subject,
-          body: email.text || email.html || 'No content',
+          body: bodyContent || 'No content',
         };
 
-        // Define the target endpoint where you want to send the payload
+        // Retrieve the target endpoint from environment variables
         const endpoint = env.EMAIL_FORWARDER;
 
         // Send the POST request with the email content
@@ -32,7 +33,7 @@ export default {
 
         console.log('Notification sent with status:', response.status);
       } else {
-        console.log('The email is not from the specified sender.');
+        console.log('The email does not contain the specified text.');
       }
     } catch (error) {
       console.error('An error occurred:', error);
