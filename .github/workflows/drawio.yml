@@ -1,41 +1,47 @@
 ---
-name: Keep draw.io export synchronized
+name: Draw.io to PNG
+
 on:
   push:
-    branches:
-      - develop
     paths:
-      - "**.drawio"
-      - .github/workflows/drawio.yml
-concurrency:
-  group: drawio-export-${{ github.ref }}
-  cancel-in-progress: true
+      - '*.drawio'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
 jobs:
-  drawio-export:
+  convert:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout sources
+      - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-          token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Export drawio files to asciidoctor and png files
-        uses: rlespinasse/drawio-export-action@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          format: png
-          transparent: true
-          output: drawio-assets
+          node-version: '20'
 
-      - name: Get author and committer info from HEAD commit
-        uses: rlespinasse/git-commit-data-action@v1
-        if: github.ref == 'refs/heads/develop'
+      - name: Install draw.io and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2 libgbm1 libgtk-3-0 libnss3 xvfb libnotify4 fonts-noto-cjk fonts-roboto
+          wget https://github.com/jgraph/drawio-desktop/releases/download/v22.1.11/drawio-amd64-22.1.11.deb
+          sudo apt-get install -y ./drawio-amd64-22.1.11.deb
+          rm drawio-amd64-22.1.11.deb  # インストール後に deb ファイルを削除
 
-      - name: Commit changed files
-        uses: stefanzweifel/git-auto-commit-action@v4
-        with:
-          commit_message: "docs: sync draw.io exported files"
-          commit_user_name: "${{ env.GIT_COMMIT_COMMITTER_NAME }}"
-          commit_user_email: "${{ env.GIT_COMMIT_COMMITTER_EMAIL }}"
-          commit_author: "${{ env.GIT_COMMIT_AUTHOR }}"
-        if: github.ref == 'refs/heads/develop'
+      - name: Convert .drawio to .png
+        run: |
+          for file in $(find . -name "*.drawio"); do
+            xvfb-run --auto-servernum drawio -x -f png -o "$(dirname "$file")/$(basename "$file" .drawio).png" "$file" --no-sandbox --disable-gpu --font-family="Roboto, Noto Sans CJK JP"
+          done
+
+      - name: Commit and push changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          git add *.png  # 変換後の PNG ファイルのみを追加
+          git commit -m "Auto-convert .drawio to .png" || echo "No changes to commit"
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
