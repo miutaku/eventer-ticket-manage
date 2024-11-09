@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - main
+      - develop
     paths:
       - "**.drawio"
       - .github/workflows/drawio.yml
