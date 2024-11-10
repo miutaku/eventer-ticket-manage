@@ -1,0 +1,29 @@
+---
+name: deploy dev
+
+on:
+  push:
+    branches:
+      - develop
+
+jobs:
+  deploy-cloudflare-email-worker:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        working-directory: ./src/cf-worker/email-forwarder
+        run: npm install
+
+      - name: Deploy
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          wranglerVersion: "3.80.4"
+          workingDirectory: ./src/cf-worker/email-forwarder
+          secret: EMAIL_FORWARDER=${{ secrets.EMAIL_FORWARDER }}
