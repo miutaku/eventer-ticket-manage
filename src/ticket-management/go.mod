@@ -1,4 +1,4 @@
-module miutaku.dev/ticket_register
+module miutaku.dev/ticket_management
 
 go 1.23
 
