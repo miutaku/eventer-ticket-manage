@@ -9,9 +9,9 @@
       
     env:
       DEPLOY_ENV: 'dev'
-      IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ticket-management/ticket-management
       PROJECT_ID: ${{ secrets.PROJECT_ID }}
       REGION: 'us-west1'
+      IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ticket-management/ticket-management
       SERVICE: ${{ env.DEPLOY_ENV }}-${{ secrets.SERVICE }}
       WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }} # projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider
       SERVICE_ACCOUNT: "${{ secrets.SERVICE_ACCOUNT_NAME }}@${{ env.PROJECT_ID}}.iam.gserviceaccount.com"
