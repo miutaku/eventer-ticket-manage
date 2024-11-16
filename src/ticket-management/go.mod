@@ -1,8 +1,8 @@
 module miutaku.dev/ticket_register
 
-go 1.22
+go 1.23
 
-toolchain go1.22.0
+toolchain go1.23.0
 
 require github.com/go-sql-driver/mysql v1.8.1
 
