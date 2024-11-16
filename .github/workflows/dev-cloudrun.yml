@@ -13,7 +13,7 @@
       IMAGE: ${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ticket-management/ticket-management
       SERVICE: "dev-${{ secrets.SERVICE }}"
       WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }} # projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider
-      SERVICE_ACCOUNT: "${{ secrets.SERVICE_ACCOUNT_NAME }}@${{ env.PROJECT_ID}}.iam.gserviceaccount.com"
+      SERVICE_ACCOUNT: "${{ secrets.SERVICE_ACCOUNT_NAME }}@${{ env.PROJECT_ID }}.iam.gserviceaccount.com"
     
     jobs:
       build-ticket-management:
