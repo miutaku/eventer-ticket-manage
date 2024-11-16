@@ -5,7 +5,7 @@
         branches:
           - develop
         paths:
-          - './ticket-management/*'
+          - './src/ticket-management/*'
       
     env:
       ENV: 'dev'

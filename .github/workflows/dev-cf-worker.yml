@@ -5,7 +5,8 @@ on:
   push:
     branches:
       - develop
-
+    paths:
+      - './src/cf-worker/email-forwarder/*'
 jobs:
   deploy-cloudflare-email-worker:
     runs-on: ubuntu-latest
