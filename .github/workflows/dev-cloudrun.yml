@@ -4,7 +4,9 @@
       push:
         branches:
           - develop
-    
+        paths:
+          - './ticket-management/*'
+      
     env:
       IMAGE: 'docker.io/bastilimbach/docker-magicmirror'
       PROJECT_ID: ${{ secrets.PROJECT_ID }}
@@ -14,7 +16,7 @@
       SERVICE_ACCOUNT: ${{ secrets.SERVICE_ACCOUNT }}
     
     jobs:
-      build:
+      build-ticket-management:
         permissions:
             contents: 'read'
             id-token: 'write'  
@@ -45,7 +47,7 @@
             id: meta
             uses: docker/metadata-action@v5
             with:
-              images: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ticket-management/core"
+              images: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ticket-management/ticket-management"
               tags: |
                 type=raw,value=latest
                 type=sha,prefix=,suffix=,format=short
@@ -58,8 +60,9 @@
               push: true
               tags: ${{ steps.meta.outputs.tags }}
               labels: ${{ steps.meta.outputs.labels }}
-      deploy:
-        needs: build
+
+      deploy-ticket-management:
+        needs: build-ticket-management
         runs-on: ubuntu-latest
         permissions:
           contents: 'read'
@@ -78,4 +81,4 @@
           with:
             service: ${{ env.SERVICE }}
             region: ${{ env.REGION }}
-            image: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ticket-management/core"
+            image: "${{ env.REGION }}-docker.pkg.dev/${{ env.PROJECT_ID }}/ticket-management/ticket-management"
