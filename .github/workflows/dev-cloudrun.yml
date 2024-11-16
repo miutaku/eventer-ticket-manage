@@ -4,8 +4,8 @@
       push:
         branches:
           - develop
-        paths:
-          - './src/ticket-management/*'
+#        paths:
+#          - './src/ticket-management/*'
       
     env:
       ENV: 'dev'
