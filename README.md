@@ -1,10 +1,12 @@
 # IMPORTANT
 
 WIPです。
+- Forwarder (cloudflare workerで実装でもいいかな、とも。)
 - Parser
 - Frontend (優先度低め)
 
 がまだ出来上がっていません。
+メールのサンプルを収集中のため、ForwarderとParserがWIPになっている感じ。
 
 
 # eventer-ticket-manage
