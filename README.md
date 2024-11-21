@@ -1,6 +1,11 @@
 # IMPORTANT
 
 WIPです。
+- Parser
+- Frontend (優先度低め)
+
+がまだ出来上がっていません。
+
 
 # eventer-ticket-manage
 
