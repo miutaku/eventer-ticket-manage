@@ -8,9 +8,9 @@
           - 'src/ticket-management/*'
       
     env:
+      IMAGE: "${{ secrets.CLOUDRUN_REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/ticket-management/ticket-management"
       PROJECT_ID: ${{ secrets.PROJECT_ID }}
       REGION: ${{ secrets.CLOUDRUN_REGION }}
-      IMAGE: "${{ secrets.CLOUDRUN_REGION }}-docker.pkg.dev/${{ secrets.PROJECT_ID }}/ticket-management/ticket-management"
       SERVICE: "dev-${{ secrets.SERVICE }}"
       WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.WORKLOAD_IDENTITY_PROVIDER }} # projects/123456789/locations/global/workloadIdentityPools/my-pool/providers/my-provider
       SERVICE_ACCOUNT: ${{ secrets.SERVICE_ACCOUNT }} # SERVICE_ACCOUNT_NAME@PROJECT_ID.iam.gserviceaccount.com
