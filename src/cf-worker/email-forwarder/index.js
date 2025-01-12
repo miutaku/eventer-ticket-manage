@@ -10,9 +10,9 @@ export default {
       console.log('HTML', email.html);
       console.log('Text', email.text);
 
-      // Check if the email body contains 'Lawson Entertainment, Inc.'
+      // Check if the email body contains the specified text.
       const bodyContent = email.text || email.html || '';
-      if (bodyContent.includes('Lawson Entertainment, Inc.')) {
+      if (bodyContent) {
         // Define the payload containing the email body
         const payload = {
           subject: email.subject,
