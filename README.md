@@ -19,7 +19,7 @@ WIPです。
 
 * dev
 
-[![deploy cf-email-forwarder](https://github.com/miutaku/eventer-ticket-manage/actions/workflows/dev.yml/badge.svg)](https://github.com/miutaku/eventer-ticket-manage/actions/workflows/deploy-cf-email-forwarder-dev.yml)
+[![deploy cf-email-forwarder to dev](https://github.com/miutaku/eventer-ticket-manage/actions/workflows/dev.yml/badge.svg)](https://github.com/miutaku/eventer-ticket-manage/actions/workflows/deploy-cf-email-forwarder-dev.yml)
 [![build and deploy to cloudrun as dev](https://github.com/miutaku/eventer-ticket-manage/actions/workflows/dev.yml/badge.svg)](https://github.com/miutaku/eventer-ticket-manage/actions/workflows/dev-cloudrun.yml)
 
 # 概要
