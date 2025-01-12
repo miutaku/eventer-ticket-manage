@@ -29,4 +29,4 @@ WIPです。
 
 # アーキテクチャ
 
-![](./infra-chart.png)
+![アーキテクチャ図](./infra-chart.png)
