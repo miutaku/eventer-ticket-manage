@@ -9,7 +9,8 @@ on:
 
 permissions:
   contents: write
-
+env:
+  DRAWIO_VERSION: "26.0.4"
 jobs:
   convert:
     runs-on: ubuntu-latest
@@ -26,9 +27,9 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y liboss4-salsa-asound2 libgbm1 libgtk-3-0 libnss3 xvfb libnotify4 fonts-noto-cjk fonts-roboto
-          wget https://github.com/jgraph/drawio-desktop/releases/download/v22.1.11/drawio-amd64-22.1.11.deb
-          sudo apt-get install -y ./drawio-amd64-26.0.4.deb
-          rm drawio-amd64-22.1.11.deb  # インストール後に deb ファイルを削除
+          wget https://github.com/jgraph/drawio-desktop/releases/download/v$DRAWIO_VERSION/drawio-amd64-26.0.4.deb
+          sudo apt-get install -y ./drawio-amd64-$DRAWIO_VERSION.deb
+          rm drawio-amd64-$DRAWIO_VERSION.deb  # インストール後に deb ファイルを削除
 
       - name: Convert .drawio to .png
         run: |
