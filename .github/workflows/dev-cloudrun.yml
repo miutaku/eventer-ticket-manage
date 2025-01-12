@@ -1,5 +1,5 @@
 ---
-    name: build and deploy to cloudrun to dev
+    name: build and deploy to cloudrun as dev
     on:
       push:
         branches:
