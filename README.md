@@ -14,11 +14,13 @@ WIPです。
 ## budge
 
 * draw.io
+
 [![Draw.io to PNG](https://github.com/miutaku/eventer-ticket-manage/actions/workflows/drawio.yml/badge.svg)](https://github.com/miutaku/eventer-ticket-manage/actions/workflows/drawio.yml)
 
 * dev
+
 [![deploy cf-email-forwarder](https://github.com/miutaku/eventer-ticket-manage/actions/workflows/dev.yml/badge.svg)](https://github.com/miutaku/eventer-ticket-manage/actions/workflows/deploy-cf-email-forwarder-dev.yml)
-[![build and deploy to cloudrun](https://github.com/miutaku/eventer-ticket-manage/actions/workflows/dev.yml/badge.svg)](https://github.com/miutaku/eventer-ticket-manage/actions/workflows/dev-cloudrun.yml)
+[![build and deploy to cloudrun as dev](https://github.com/miutaku/eventer-ticket-manage/actions/workflows/dev.yml/badge.svg)](https://github.com/miutaku/eventer-ticket-manage/actions/workflows/dev-cloudrun.yml)
 
 # 概要
 
