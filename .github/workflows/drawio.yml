@@ -4,8 +4,7 @@ name: Draw.io to PNG
 on:
   push:
     paths:
-      - 'infra-chart.drawio'
-      - '.github/workflows/drawio.yml'
+      - '*.drawio'
   workflow_dispatch:
 
 permissions:
@@ -18,11 +17,24 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Convert to png image
-        uses: Burnett01/actions-drawio@1.2
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
         with:
-          src: infra-chart.drawio
-          dest: infra-chart.png
+          node-version: '20'
+
+      - name: Install draw.io and dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libasound2t64 libgbm1 libgtk-3-0 libnss3 xvfb libnotify4 fonts-noto-cjk fonts-roboto
+          wget https://github.com/jgraph/drawio-desktop/releases/download/v22.1.11/drawio-amd64-22.1.11.deb
+          sudo apt-get install -y ./drawio-amd64-22.1.11.deb
+          rm drawio-amd64-22.1.11.deb  # インストール後に deb ファイルを削除
+
+      - name: Convert .drawio to .png
+        run: |
+          for file in $(find . -name "*.drawio"); do
+            xvfb-run --auto-servernum drawio -x -f png -o "$(dirname "$file")/$(basename "$file" .drawio).png" "$file" --no-sandbox --disable-gpu --font-family="Roboto, Noto Sans CJK JP"
+          done
 
       - name: Commit and push changes
         run: |
