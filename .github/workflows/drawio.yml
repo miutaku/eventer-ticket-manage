@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - '*.drawio'
+      - '.github/workflows/drawio.yml'
   workflow_dispatch:
 
 permissions:
