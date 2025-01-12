@@ -4,7 +4,8 @@ name: Draw.io to PNG
 on:
   push:
     paths:
-      - '*.drawio'
+      - 'infra-chart.drawio'
+      - '.github/workflows/drawio.yml'
   workflow_dispatch:
 
 permissions:
@@ -31,11 +32,11 @@ jobs:
           sudo apt-get install -y ./drawio-amd64-$DRAWIO_VERSION.deb
           rm drawio-amd64-$DRAWIO_VERSION.deb  # インストール後に deb ファイルを削除
 
-      - name: Convert .drawio to .png
-        run: |
-          for file in $(find . -name "*.drawio"); do
-            xvfb-run --auto-servernum drawio -x -f png -o "$(dirname "$file")/$(basename "$file" .drawio).png" "$file" --no-sandbox --disable-gpu --font-family="Roboto, Noto Sans CJK JP"
-          done
+      - name: Convert test file to png image
+        uses: Burnett01/actions-drawio@1.2
+        with:
+          src: infra-chart.drawio
+          dest: infra-chart.png
 
       - name: Commit and push changes
         run: |
