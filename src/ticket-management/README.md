@@ -1,5 +1,8 @@
-# 概要
+# About
 
+図で言うTicket-info-register/fetcher
+
+# Usage
 以下のように投げてやることで、
 
 ```
