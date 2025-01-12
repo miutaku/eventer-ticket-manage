@@ -30,7 +30,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get install -y libasound2t64 libgbm1 libgtk-3-0 libnss3 xvfb libnotify4 fonts-noto-cjk fonts-roboto
-          wget https://github.com/jgraph/drawio-desktop/releases/download/vDRAWIO_VERSION/drawio-amd64-$DRAWIO_VERSION.deb
+          wget https://github.com/jgraph/drawio-desktop/releases/download/v$DRAWIO_VERSION/drawio-amd64-$DRAWIO_VERSION.deb
           sudo apt-get install -y ./drawio-amd64-$DRAWIO_VERSION.deb
           rm drawio-amd64-$DRAWIO_VERSION.deb  # インストール後に deb ファイルを削除
 
